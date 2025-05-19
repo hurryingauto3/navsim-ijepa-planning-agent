@@ -1,0 +1,13 @@
+# filename: navsim/planning/script/config/training/feature_builder/ijepa_feature_builders.yaml
+# This file defines the list of feature builders
+
+_target_: builtins.list # This tells Hydra this config defines a list
+
+# List items follow below
+- _target_: navsim.agents.ijepa.IJEPAPlanningAgent.CameraImageFeatureBuilder
+  # No specific params needed by CameraImageFeatureBuilder?
+  # params: {} # Example if it had params
+
+- _target_: navsim.agents.ijepa.IJEPAPlanningAgent.EgoFeatureBuilder
+  # Reference the agent's num_history_frames from the TOP-LEVEL 'agent' key
+  num_history_frames: ${agent.num_history_frames} # Hydra resolves agent.num_history_frames from the main config

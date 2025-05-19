@@ -1,0 +1,10 @@
+# filename: navsim/planning/script/config/training/target_builder/ijepa_target_builders.yaml
+# This file defines the list of target builders
+
+_target_: builtins.list # This tells Hydra this config defines a list
+
+# List items follow below
+- _target_: navsim.agents.ijepa.IJEPAPlanningAgent.TrajectoryTargetBuilderGT
+  # Reference agent's params from the TOP-LEVEL 'agent' key
+  trajectory_sampling: ${agent.trajectory_sampling} # Hydra resolves agent.trajectory_sampling
+  num_history_frames: ${agent.num_history_frames} # Hydra resolves agent.num_history_frames

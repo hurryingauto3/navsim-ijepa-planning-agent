@@ -1,0 +1,36 @@
+services:
+  navsim:
+    # Optional: Build context if Dockerfile is in the same directory
+    # build: .
+    shm_size: 16g 
+    image: gcr.io/nyumlstudy/navsim-notebook:latest # Use the image you built with the Dockerfile above
+    container_name: navsim
+    ports:
+      - "8888:8888" # Jupyter
+      - "8080:8080" # VS Code Server
+    volumes:
+    # Mount local directories to the container
+      # Adjust the paths as necessary for your local setup
+      # Example: Mounting a dataset directory and code directory
+      # .path_to_your_local_code:/navsim_workspace/code
+      - /mnt/dataset:/navsim_workspace/dataset:rw,rshared
+      - /home/aliha/code:/navsim_workspace/code
+      - /home/aliha/exp:/navsim_workspace/exp
+      - /home/aliha/navsim:/navsim_workspace/navsim
+      # Add any other necessary volumes
+    # --- GPU Configuration ---
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              # Request all available GPUs. Change 'all' to a specific count if needed (e.g., count: 1)
+              # Or specify specific GPU IDs: device_ids: ['0', '1']
+              count: all
+              capabilities: [gpu] # Essential capability
+    # Optional: Keep container running if entrypoint exits
+    tty: true
+    stdin_open: true
+    # --- Environment variables if needed specifically at runtime ---
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all # Often handled by deploy section now

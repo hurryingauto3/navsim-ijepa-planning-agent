@@ -1,0 +1,14 @@
+# filename: /navsim_workspace/code/hydra/ijepa_planning_agent.yaml 
+# @package agent
+_target_: navsim.agents.ijepa.IJEPAPlanningAgent.IJEPAPlanningAgent # Path to your class
+checkpoint_path: /navsim_workspace/exp/2025.04.27.17.39.45/lightning_logs/version_0/checkpoints/epoch19-step840.ckpt
+ijepa_model_id: facebook/ijepa_vith14_1k # The I-JEPA model ID
+trajectory_sampling:
+  _target_: nuplan.planning.simulation.trajectory.trajectory_sampling.TrajectorySampling
+  time_horizon: 4.0
+  interval_length: 0.5
+use_cls_token_if_available: true
+requires_scene: false # Adjust if your agent needs scene data beyond current frame
+learning_rate: 0.0001 # Configurable learning rate
+loss_criterion: l1 # 'l1' or 'mse'
+# Any other parameters needed by your agent's __init__

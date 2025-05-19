@@ -1,0 +1,35 @@
+# LaTeX intermediate and output files
+*.aux
+*.bbl
+*.blg
+*.brf
+*.dvi
+*.log
+*.nav
+*.out
+*.ps
+*.snm
+*.toc
+*.vrb
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+
+# LaTeX editor files
+*.bak
+*.backup
+*.swp
+*.synctex.gz
+*.synctex.gz(busy)
+
+# Python junk files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.pyp
+
+# Zip files
+*.zip
+.DS_Store
+*.pdf
