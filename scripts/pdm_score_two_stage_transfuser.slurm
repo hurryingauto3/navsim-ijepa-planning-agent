@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=eval_transfuser_2stage
+#SBATCH --job-name=eval_transfuser_ijepa_2stage
 #SBATCH --partition=l40s_public
 #SBATCH --account=torch_pr_68_tandon_advanced
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --gres=gpu:4
-#SBATCH --mem=256GB
+#SBATCH --mem=400GB
 #SBATCH --time=02:00:00
 #SBATCH --output=/scratch/ah7072/experiments/logs/output/eval_%j.out
 #SBATCH --error=/scratch/ah7072/experiments/logs/error/eval_%j.err
@@ -27,16 +27,15 @@
 # Agent Configuration
 export TORCH=""
 export AGENT="transfuser_agent"
-export CHECKPOINT="/scratch/ah7072/experiments/exp_a4_transfuser_100pct_20251021_005545/2025.10.21.00.56.32/lightning_logs/version_324588/checkpoints/epoch=19-step=6660.ckpt"
+export CHECKPOINT="/scratch/ah7072/experiments/exp_transfuser_agent_ijepa_100pct_20251026_211211/2025.10.26.21.12.49/lightning_logs/version_358532/checkpoints/epoch=19-step=6660.ckpt"
+
 
 # Evaluation Settings
 export EVAL_SPLIT="navhard_two_stage"  # Extended evaluation with synthetic observations
 export RUN_NAME="eval_${AGENT}_${EVAL_SPLIT}_$(date +%Y%m%d_%H%M%S)"
 
 # Performance Tuning (GPU-based)
-export NUM_WORKERS=16  # Ray workers for parallelization
-export BATCH_SIZE=32   # Inference batch size
-
+export NUM_WORKERS=4  # Ray workers for parallelization
 # -----------------------------------------------------------------------------
 # PATH CONFIGURATION
 # -----------------------------------------------------------------------------
@@ -48,7 +47,7 @@ export NAVSIM_EXP_ROOT="/scratch/ah7072/experiments"
 
 # Output Paths
 export OUTPUT_DIR="${NAVSIM_EXP_ROOT}/evaluations/${RUN_NAME}"
-export METRIC_CACHE="${NAVSIM_EXP_ROOT}/metric_cache"
+export METRIC_CACHE="${NAVSIM_EXP_ROOT}/${EVAL_SPLIT}_metric_cache"
 
 # Synthetic data paths for two-stage evaluation
 export SYNTHETIC_SENSOR_PATH="${OPENSCENE_DATA_ROOT}/navhard_two_stage/sensor_blobs"
@@ -143,7 +142,9 @@ python ${NAVSIM_DEVKIT_ROOT}/navsim/planning/script/run_pdm_score.py \
     output_dir="${OUTPUT_DIR}" \
     agent=${AGENT} \
     agent.checkpoint_path="'${CHECKPOINT}'" \
+    agent.config.backbone="ijepa" \
     worker="ray_distributed${TORCH}" \
+    worker.threads_per_node=${NUM_WORKERS} \
 
 EVAL_EXIT_CODE=$?
 

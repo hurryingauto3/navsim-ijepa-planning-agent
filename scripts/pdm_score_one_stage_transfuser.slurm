@@ -2,9 +2,8 @@
 #SBATCH --job-name=eval_transfuser_ijepa_1stage
 #SBATCH --partition=l40s_public
 #SBATCH --account=torch_pr_68_tandon_advanced
-#SBATCH --nodes=4
-#SBATCH --ntasks=4
-#SBATCH --cpus-per-task=32
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
 #SBATCH --gres=gpu:4
 #SBATCH --mem=400GB
 #SBATCH --time=02:00:00
@@ -34,8 +33,7 @@ export EVAL_SPLIT="navtest"
 export RUN_NAME="eval_${AGENT}_${EVAL_SPLIT}_$(date +%Y%m%d_%H%M%S)"
 
 # Performance Tuning (GPU-based)
-export NUM_WORKERS=8  # Ray workers for parallelization
-export BATCH_SIZE=16   # Inference batch size
+export NUM_WORKERS=4  # Ray workers for parallelization
 
 # -----------------------------------------------------------------------------
 # PATH CONFIGURATION
@@ -138,7 +136,8 @@ python ${NAVSIM_DEVKIT_ROOT}/navsim/planning/script/run_pdm_score_one_stage.py \
     agent="${AGENT}" \
     agent.config.backbone="ijepa" \
     agent.checkpoint_path="'${CHECKPOINT}'" \
-    worker="ray_distributed${TORCH}"
+    worker="ray_distributed${TORCH}" \
+    worker.threads_per_node=${NUM_WORKERS} \
 
 EVAL_EXIT_CODE=$?
 

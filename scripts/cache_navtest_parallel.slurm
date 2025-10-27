@@ -1,17 +1,17 @@
 #!/bin/bash
-#SBATCH --job-name=cache_navtest_parallel
+#SBATCH --job-name=cache_navhard_parallel
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=128
 #SBATCH --mem=256GB
 #SBATCH --time=08:00:00
-#SBATCH --output=/scratch/ah7072/experiments/logs/caching/cache_navtest_%j.out
-#SBATCH --error=/scratch/ah7072/experiments/logs/caching/cache_navtest_%j.err
+#SBATCH --output=/scratch/ah7072/experiments/logs/caching/cache_navhard_%j.out
+#SBATCH --error=/scratch/ah7072/experiments/logs/caching/cache_navhard_%j.err
 #SBATCH --mail-user=ah7072@nyu.edu
 #SBATCH --mail-type=END,FAIL
 
 # =============================================================================
-# Fast parallel metric caching for navtest split
+# Fast parallel metric caching for navhard split
 # Uses 128 CPUs for maximum parallelism (no GPU needed)
 # =============================================================================
 # Activate Conda Environment
@@ -46,7 +46,7 @@ export NAVSIM_DEVKIT_ROOT="/scratch/ah7072/navsim"
 export OPENSCENE_DATA_ROOT="/scratch/ah7072/data/openscene"
 export NUPLAN_MAPS_ROOT="/scratch/ah7072/data/maps"
 export NAVSIM_EXP_ROOT="/scratch/ah7072/experiments"
-export EVAL_SPLIT="navtest"
+export EVAL_SPLIT="navhard_two_stage"
 
 echo "=============================================="
 echo "Parallel Metric Caching: ${EVAL_SPLIT} Split"
@@ -67,7 +67,7 @@ echo ""
 # worker and max_number_of_workers match default_common.yaml defaults
 python navsim/planning/script/run_metric_caching.py \
     train_test_split="${EVAL_SPLIT}" \
-    metric_cache_path="${NAVSIM_EXP_ROOT}/metric_cache" \
+    metric_cache_path="${NAVSIM_EXP_ROOT}/${EVAL_SPLIT}_metric_cache" \
     worker=ray_distributed_no_torch \
     max_number_of_workers="${SLURM_CPUS_PER_TASK}"
 
