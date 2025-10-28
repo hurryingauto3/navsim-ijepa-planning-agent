@@ -1,11 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=download_mini
 #SBATCH --nodes=1
+#SBATCH --account=pr_141_general
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=16GB
-#SBATCH --time=06:00:00
-#SBATCH --output=/scratch/ah7072/data/logs/download_mini_%j.out
-#SBATCH --error=/scratch/ah7072/data/logs/download_mini_%j.err
+#SBATCH --mem=128GB
+#SBATCH --time=24:00:00   
+#SBATCH --output=/vast/ah7072/data/logs/download_mini_%j.out
+#SBATCH --error=/vast/ah7072/data/logs/download_mini_%j.err
 
 # NAVSIM Mini Dataset Download - Torch Cluster
 # Downloads navmini (~152GB, ~1M files)
@@ -22,7 +23,7 @@ echo "Start time: $(date)"
 echo "=========================================="
 
 # Define paths
-DATA_ROOT="/scratch/ah7072/data"
+DATA_ROOT="/vast/ah7072/data"
 OPENSCENE_DIR="${DATA_ROOT}/openscene"
 
 # Create directory

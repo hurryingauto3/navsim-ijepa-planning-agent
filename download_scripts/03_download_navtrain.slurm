@@ -1,11 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=download_navtrain
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=64GB
-#SBATCH --time=24:00:00
-#SBATCH --output=/scratch/ah7072/data/logs/download_navtrain_%j.out
-#SBATCH --error=/scratch/ah7072/data/logs/download_navtrain_%j.err
+#SBATCH --account=pr_141_general
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=128GB
+#SBATCH --time=24:00:00   
+#SBATCH --output=/vast/ah7072/data/logs/download_navtrain_%j.out
+#SBATCH --error=/vast/ah7072/data/logs/download_navtrain_%j.err
 
 # NAVSIM Navtrain Dataset Download - Improved & Robust
 # - Verifies MD5 checksums for all downloaded archives.
@@ -24,7 +25,7 @@ echo "Start time: $(date)"
 echo "=========================================="
 
 # Define paths
-DATA_ROOT="/scratch/ah7072/data"
+DATA_ROOT="/vast/ah7072/data"
 OPENSCENE_DIR="${DATA_ROOT}/openscene"
 DOWNLOAD_URL_BASE="https://s3.eu-central-1.amazonaws.com/avg-projects-2/navsim"
 
@@ -144,6 +145,6 @@ echo ""
 echo "Next steps:"
 echo "1. The script has already verified data integrity with MD5 checksums."
 echo "2. Set environment variables in ~/.bashrc if not already done:"
-echo "   export OPENSCENE_DATA_ROOT=/scratch/ah7072/data/openscene"
-echo "   export NUPLAN_MAPS_ROOT=/scratch/ah7072/data/maps"
+echo "   export OPENSCENE_DATA_ROOT=/vast/ah7072/data/openscene"
+echo "   export NUPLAN_MAPS_ROOT=/vast/ah7072/data/maps"
 echo "3. Run training: sbatch your_training_script.slurm"

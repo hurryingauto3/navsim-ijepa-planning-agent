@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=download_navtest
+#SBATCH --job-name=download_navhard
 #SBATCH --nodes=1
+#SBATCH --account=pr_141_general
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=32GB
+#SBATCH --mem=64GB
 #SBATCH --time=24:00:00   
-#SBATCH --output=/scratch/ah7072/data/logs/download_navtest_%j.out
-#SBATCH --error=/scratch/ah7072/data/logs/download_navtest_%j.err
-
+#SBATCH --output=/vast/ah7072/data/logs/download_navhard_%j.out
+#SBATCH --error=/vast/ah7072/data/logs/download_navhard_%j.err
 
 set -e  # Exit on any error
 set -x  # Print commands for debugging
@@ -19,7 +19,7 @@ echo "Start time: $(date)"
 echo "=========================================="
 
 # Define paths
-DATA_ROOT="/scratch/ah7072/data"
+DATA_ROOT="/vast/ah7072/data"
 OPENSCENE_DIR="${DATA_ROOT}/openscene"
 
 # Create directory

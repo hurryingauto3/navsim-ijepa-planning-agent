@@ -1,11 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=download_maps
 #SBATCH --nodes=1
+#SBATCH --account=pr_141_general
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=8GB
 #SBATCH --time=01:00:00
-#SBATCH --output=/scratch/ah7072/data/logs/download_maps_%j.out
-#SBATCH --error=/scratch/ah7072/data/logs/download_maps_%j.err
+#SBATCH --output=/vast/ah7072/data/logs/download_maps_%j.out
+#SBATCH --error=/vast/ah7072/data/logs/download_maps_%j.err
 
 # NAVSIM Maps Download - Torch Cluster
 # Downloads nuPlan maps (~9GB, required for all training)
@@ -21,7 +22,7 @@ echo "Start time: $(date)"
 echo "=========================================="
 
 # Define paths
-DATA_ROOT="/scratch/ah7072/data"
+DATA_ROOT="/vast/ah7072/data"
 MAPS_DIR="${DATA_ROOT}/maps"
 
 # Create directory

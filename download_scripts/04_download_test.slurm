@@ -1,11 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=download_navtest
 #SBATCH --nodes=1
+#SBATCH --account=pr_141_general
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=32GB
+#SBATCH --mem=64GB
 #SBATCH --time=24:00:00   
-#SBATCH --output=/scratch/ah7072/data/logs/download_navtest_%j.out
-#SBATCH --error=/scratch/ah7072/data/logs/download_navtest_%j.err
+#SBATCH --output=/vast/ah7072/data/logs/download_test_%j.out
+#SBATCH --error=/vast/ah7072/data/logs/download_test_%j.err
 
 # NAVSIM navtest Dataset Download - Torch Cluster
 # Downloads full navtest split (~459GB, ~3M files)
@@ -22,7 +23,7 @@ echo "Start time: $(date)"
 echo "=========================================="
 
 # Define paths
-DATA_ROOT="/scratch/ah7072/data"
+DATA_ROOT="/vast/ah7072/data"
 OPENSCENE_DIR="${DATA_ROOT}/openscene"
 
 # Create directory
@@ -68,6 +69,6 @@ echo ""
 echo "Next steps:"
 echo "1. Verify data integrity"
 echo "2. Set environment variables in ~/.bashrc:"
-echo "   export OPENSCENE_DATA_ROOT=/scratch/ah7072/data/openscene"
-echo "   export NUPLAN_MAPS_ROOT=/scratch/ah7072/data/maps"
+echo "   export OPENSCENE_DATA_ROOT=/vast/ah7072/data/openscene"
+echo "   export NUPLAN_MAPS_ROOT=/vast/ah7072/data/maps"
 echo "3. Run training: sbatch your_training_script.slurm"
