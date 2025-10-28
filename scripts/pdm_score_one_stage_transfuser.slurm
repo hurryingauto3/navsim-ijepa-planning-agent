@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=eval_transfuser_ijepa_1stage
-#SBATCH --partition=l40s_public
+#SBATCH --partition=h200_tandon
 #SBATCH --account=torch_pr_68_tandon_advanced
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:8
 #SBATCH --mem=400GB
-#SBATCH --time=02:00:00
+#SBATCH --time=10:00:00
 #SBATCH --output=/scratch/ah7072/experiments/logs/output/eval_%j.out
 #SBATCH --error=/scratch/ah7072/experiments/logs/error/eval_%j.err
 #SBATCH --requeue
