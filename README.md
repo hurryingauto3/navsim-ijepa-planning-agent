@@ -3,11 +3,15 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-
+[![Navsim](https://img.shields.io/badge/Navsim-brightgreen.svg)](https://github.com/hurryingauto3/navsim)
+[![GTRS](https://img.shields.io/badge/GTRS-orange.svg)](https://github.com/hurryingauto3/GTRS)
+---
+Deep learning agent for autonomous vehicle trajectory planning using I-JEPA (self-supervised learning) to achieve **90% label efficiency**.
 **Master's Thesis** | NYU Tandon | 2025-2026  
 **Author**: Ali Hamza
-
 ---
+
+
 
 ## What This Does
 
