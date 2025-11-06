@@ -1,82 +1,143 @@
-Below is a proposed multi-phase research plan that builds from a baseline NAVSIM setup to a novel planning scheme using world models with pre-trained I‑JEPA/N‑JEPA features. The plan is structured to incrementally introduce new components, validate them in simulation, and eventually integrate them into a complete planning system that could serve as the basis for an official research paper.
+# Label-Efficient Trajectory Planning with I-JEPA
+
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
+**Master's Thesis** | NYU Tandon | 2025-2026  
+**Author**: Ali Hamza
 
 ---
 
-### Phase 0: Establish the NAVSIM Baseline
-1.	Setup & Configuration
-    - Environment: Install and configure NAVSIM on the CARLA simulator with standardized training/test splits.
-    - Baseline Model: Run existing planning models (e.g., rule-based or simple sensor-driven policies) to record baseline metrics (PDMS, route completion, collision rates, etc.).
-    - Evaluation: Define clear success criteria and evaluation protocols based on NAVSIM’s simulation-based metrics.
+## What This Does
 
-2.	Data & Metrics Collection
-    - Ensure that your dataset is correctly downloaded and organized (as per NAVSIM’s instructions).
-    - Record baseline performance on various driving scenarios (including challenging ones) for later comparison.
+Uses self-supervised learning to train autonomous vehicle planning with **90% less labeled data**. Achieves 0.8466 PDMS using only 10% of training data.
+
+**Key Insight**: Pre-trained vision models (I-JEPA) already understand driving scenes. We just need to train a small planning head.
 
 ---
 
-### Phase 1: Integrate Pre-Trained I‑JEPA/N‑JEPA Encoders
-1.	Pre-Training the Encoder
-    - Dataset: Use unlabeled driving data (either real-world or simulated) to pre-train an encoder using I‑JEPA or its variant N‑JEPA.
-    - Objective: Learn high-level, semantic representations from masked image regions in a feature space—avoiding pixel-level reconstruction and heavy contrastive augmentations.
-2.	Fine-Tuning for Driving Tasks
-    - Steering Control: Fine-tune a lightweight head (or an MLP adapter) on a small set of labeled driving data to map the learned representations to control commands (e.g., steering angles).
-    - Comparison: Benchmark the performance of the I‑JEPA-based approach against models initialized with standard weights (or using contrastive pre-training like DINO/SimCLR).
-3.	Validation in Simulation
-    - Integrate the fine-tuned model into NAVSIM.
-    - Evaluate improvements in data efficiency and performance (e.g., improved PDMS or better route completion with fewer expert demonstrations).
+## Results
+
+| Method | Data Used | Score (PDMS ↑) |
+|--------|-----------|----------------|
+| Baseline (ego-only) | 100% | 0.7821 |
+| **Our Method (I-JEPA)** | **10%** | **0.8466** |
+| State-of-the-art | 100% | 0.8912 |
+
+**Bottom Line**: Match most baselines with 10× less data, within 5% of SOTA.
 
 ---
 
-### Phase 2: Develop and Integrate World Model–Based Planning
-1.	World Model Design
-    - Sequence Prediction (K-Imaginations):
-    - Generate multiple candidate trajectories (imagine future states) by iteratively applying the world model over a planning horizon.
-    - For each candidate action sequence, compute the resulting latent trajectory s_0 \rightarrow s_1 \rightarrow \ldots \rightarrow s_{k+1}.
-2.	Planning Module Development
-    - Cost Function: Define a cost (or distance) metric in the latent space that measures how close the predicted final state is to a desired target (e.g., a safe or optimal end state).
-    - Trajectory Optimization:
-    - Explore multiple action sequences.
-    - Use techniques such as model predictive control (MPC) or tree search to evaluate candidate sequences.
-    - Select the sequence that minimizes the cost while meeting safety, comfort, and progress criteria.
-    - Predict Next Action: Ultimately, use the first action from the optimal sequence as the control command for the current time step.
-3.	Integration & Validation
-    - Simulated Testing in NAVSIM:
-    - Replace or augment the existing planning module with the world model–based planner.
-    - Validate the approach by comparing its performance (in terms of safety, efficiency, route completion) against the baseline and existing planning choices available in NAVSIM.
-- Robustness Checks:
-    - Test on diverse scenarios, including edge cases and challenging driving environments.
-    - Potentially incorporate uncertainty estimates in the world model to improve planning reliability.
+## How It Works
+
+```
+Camera Image → I-JEPA Encoder (frozen) → Features → MLP Head → Trajectory
+                 630M params                          500K params (trainable)
+```
+
+1. **I-JEPA Encoder**: Pre-trained ViT-H/14 on ImageNet (frozen, no training)
+2. **Planning Head**: Small MLP that learns to map features to trajectories
+3. **Training**: Only train the 500K param head, not the 630M encoder
+
+**Why This Works**: I-JEPA already learned to recognize cars, lanes, pedestrians. We just teach it what actions to take.
 
 ---
 
-### Final Phase: Consolidation and Paper Preparation
-1.	System Integration
-- Merge the components: NAVSIM baseline, pre-trained encoder for representation learning, and world model–based planner.
-- Ensure seamless operation from raw sensor input to optimal control decisions.
-2.	Comprehensive Evaluation
-- Perform extensive testing in simulation.
-- Compare results quantitatively (using NAVSIM’s metrics) and qualitatively (observing driving behavior).
-- Analyze label efficiency and robustness under varying conditions.
-3.	Paper Drafting
-- Document the methodology, experiments, and results.
-- Highlight the contributions:
-- Efficient representation learning using I‑JEPA/N‑JEPA.
-- Novel integration of a world model for multi-step planning.
-- Significant improvements in planning performance and data efficiency.
-- Outline future directions and potential real-world applications.
+## Repository Structure
+
+```
+navsim-ijepa/
+├── GTRS/                             # Fork: Baseline implementations
+├── navsim/                           # Fork: Core framework
+│   └── agents/IJEPAPlanningAgentV2.py  # ⭐ Main agent (800 lines)
+└── navsim-ijepa-planning-agent/      # Research workspace
+    ├── code/ijepa/                   # Agent implementations
+    ├── scripts/                      # HPC training scripts (Slurm)
+    ├── reports/                      # Thesis LaTeX
+    └── summaries/                    # Experiment logs
+```
 
 ---
 
-### Key Points for Improvement with World Models
-- Enhanced Prediction Accuracy:
-Leverage the semantic power of the pre-trained encoder to improve latent space prediction of future states.
-- Multi-Hypothesis Planning (K-Imagination):
-Generate multiple candidate trajectories, compute distances or costs for each, and choose the optimal trajectory based on combined metrics (safety, progress, comfort).
-- Optimal Action Selection:
-Focus on predicting the next best action given the current data, rather than a single deterministic output—this allows for a more flexible and robust planning scheme.
-- Iterative Refinement:
-Combine reinforcement learning or policy optimization techniques with the world model to refine the planning strategy over time.
+## Quick Start
+
+### Installation (5 minutes)
+
+```bash
+# Clone repos
+mkdir navsim-ijepa
+cd navsim-ijepa
+git clone https://github.com/hurryingauto3/navsim-planning-agent.git
+git clone https://github.com/hurryingauto3/navsim.git
+git clone https://github.com/hurryingauto3/GTRS.git
+
+# Install dependencies
+conda env create -f navsim/environment.yml
+conda activate navsim
+pip install -e .
+
+# Set paths
+export NAVSIM_DEVKIT_ROOT="$(pwd)"
+export OPENSCENE_DATA_ROOT="/scratch/$USER/openscene"
+export NAVSIM_EXP_ROOT="/scratch/$USER/experiments"
+```
+
+### Training (Single GPU, navmini dataset)
+
+```bash
+python navsim/planning/script/run_training_dense.py \
+    agent=ijepa_mlp_v2 \
+    experiment_name=test_run \
+    split=navmini \
+    trainer.max_epochs=10 \
+    trainer.devices=1
+```
+
+### Training (Multi-GPU on HPC)
+
+```bash
+# Edit scripts/train_4node.slurm with your config
+sbatch scripts/train_4node.slurm
+```
+
+### Evaluation
+
+```bash
+python navsim/evaluate/pdm_score.py \
+    agent=ijepa_mlp_v2 \
+    checkpoint=/path/to/checkpoint.ckpt \
+    split=navtest
+```
 
 ---
 
-This plan should serve as a solid roadmap for your research project, guiding you from baseline setup through advanced planning integration using world models. Each phase builds on the previous one, ultimately culminating in a robust system that can be validated in NAVSIM and presented as an official research paper.
+## Technical Details
+
+### Architecture
+- **Encoder**: I-JEPA ViT-H/14 (630M params, frozen)
+- **Planning Head**: 3-layer MLP (500K params)
+- **Input**: Front camera (512×2048) + ego history (4 frames)
+- **Output**: 8 future waypoints (x, y, heading)
+
+### Training Setup
+- **Framework**: PyTorch Lightning + Hydra
+- **Hardware**: 4 nodes × 4 GPUs (L40S/A100/H100)
+- **Time**: 6-10 hours for 50 epochs
+- **Data**: NAVSIM navtrain dataset (10% split)
+
+### Engineering Highlights
+- Multi-node distributed training (DDP)
+- Mixed-precision (fp16) for 2× speedup
+- Automatic checkpointing + recovery
+- Weights & Biases experiment tracking
+
+---
+
+## Documentation
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design (if you want technical details)
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development guide
+- **`reports/final_report/`** - Full thesis LaTeX
+
+---
