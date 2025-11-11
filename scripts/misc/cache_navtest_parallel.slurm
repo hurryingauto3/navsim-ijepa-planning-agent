@@ -1,8 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=cache_navhard_parallel
+#SBATCH --job-name=cache_navtest_parallel
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=128
+#SBATCH --account=torch_pr_68_tandon_advanced
 #SBATCH --mem=256GB
 #SBATCH --time=08:00:00
 #SBATCH --output=/scratch/ah7072/experiments/logs/caching/cache_navhard_%j.out
@@ -46,7 +47,7 @@ export NAVSIM_DEVKIT_ROOT="/scratch/ah7072/navsim"
 export OPENSCENE_DATA_ROOT="/scratch/ah7072/data/openscene"
 export NUPLAN_MAPS_ROOT="/scratch/ah7072/data/maps"
 export NAVSIM_EXP_ROOT="/scratch/ah7072/experiments"
-export EVAL_SPLIT="navhard_two_stage"
+export EVAL_SPLIT="navtest"
 
 echo "=============================================="
 echo "Parallel Metric Caching: ${EVAL_SPLIT} Split"
