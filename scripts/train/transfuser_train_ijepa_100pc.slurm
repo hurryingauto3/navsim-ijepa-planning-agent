@@ -84,7 +84,7 @@ echo "=============================================="
 # Environment setup
 export HYDRA_FULL_ERROR=1
 export NAVSIM_DEVKIT_ROOT="/scratch/ah7072/navsim"
-export OPENSCENE_DATA_ROOT="/scratch/ah7072/data/openscene"
+export OPENSCENE_DATA_ROOT="/scratch/ah7072/data"
 export NUPLAN_MAPS_ROOT="/scratch/ah7072/data/maps"
 export NAVSIM_EXP_ROOT="/scratch/ah7072/experiments"
 export WANDB_MODE="online" # Set to "disabled" for no logging

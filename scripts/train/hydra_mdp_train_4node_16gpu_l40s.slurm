@@ -28,7 +28,7 @@ echo "=============================================="
 
 # Environment setup
 export NAVSIM_DEVKIT_ROOT="/scratch/ah7072/GTRS"
-export OPENSCENE_DATA_ROOT="/scratch/ah7072/data/openscene"
+export OPENSCENE_DATA_ROOT="/scratch/ah7072/data/"
 export NUPLAN_MAPS_ROOT="/scratch/ah7072/data/maps"
 export NAVSIM_EXP_ROOT="/scratch/ah7072/experiments"
 export DP_PREDS="none"

@@ -29,7 +29,7 @@ echo "=============================================="
 # Environment setup
 export HYDRA_FULL_ERROR=1
 export NAVSIM_DEVKIT_ROOT="/scratch/ah7072/navsim"
-export OPENSCENE_DATA_ROOT="/scratch/ah7072/data/openscene"
+export OPENSCENE_DATA_ROOT="/scratch/ah7072/data"
 export NUPLAN_MAPS_ROOT="/scratch/ah7072/data/maps"
 export NAVSIM_EXP_ROOT="/scratch/ah7072/experiments"
 export DP_PREDS="none"
@@ -52,8 +52,7 @@ echo "  Total GPUs: 16"
 echo ""
 
 # Create experiment directory
-EXPERIMENT_NAME="exp_a4_transfuser_100pct_$(date +%Y%m%d_%H%M%S)"
-mkdir -p "${NAVSIM_EXP_ROOT}/${EXPERIMENT_NAME}/notes"
+EXPERIMENT_NAME="exp_a5_ijepa_mlp_100pct_$(date +%Y%m%d_%H%M%S)"
 mkdir -p /scratch/ah7072/experiments/logs/output
 mkdir -p /scratch/ah7072/experiments/logs/error
 
