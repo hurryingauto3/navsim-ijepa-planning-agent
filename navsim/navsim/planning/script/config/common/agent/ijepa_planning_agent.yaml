@@ -1,0 +1,20 @@
+# filename: /navsim_workspace/code/hydra/ijepa_planning_agent.yaml 
+# @package agent
+_target_: navsim.agents.IJEPAPlanningAgentV2.IJEPAPlanningAgent
+mlp_weights_path: null  # Path to pretrained MLP weights or null
+ijepa_model_id: facebook/ijepa_vith14_1k
+trajectory_sampling:
+  _target_: nuplan.planning.simulation.trajectory.trajectory_sampling.TrajectorySampling
+  time_horizon: 4.0
+  interval_length: 0.5
+num_history_frames: 1  # Single-frame ego features (default for V2)
+use_cls_token_if_available: true
+requires_scene: false
+learning_rate: 0.0001
+loss_criterion: l1  # 'l1' or 'mse'
+accel_loss_weight: 0.0  # Set >0 to enable acceleration penalty
+jerk_loss_weight: 0.0   # Set >0 to enable jerk penalty
+weight_decay: 0.0       # AdamW weight decay
+max_epochs: 50          # Needed for cosine scheduler
+use_cosine_scheduler: true
+cosine_eta_min_ratio: 0.01

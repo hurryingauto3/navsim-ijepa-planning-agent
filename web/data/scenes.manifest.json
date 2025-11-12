@@ -1,0 +1,16 @@
+[
+  {
+    "token": "scene_001",
+    "name": "TownCenter - Unprotected Left",
+    "preview_url": "/static/previews/scene_001.png",
+    "has_stage2": true,
+    "metric_cache_path": "s3://navsim-r2/caches/scene_001_epdms.json"
+  },
+  {
+    "token": "scene_002",
+    "name": "Highway Merge",
+    "preview_url": "/static/previews/scene_002.png",
+    "has_stage2": false,
+    "metric_cache_path": "s3://navsim-r2/caches/scene_002_epdms.json"
+  }
+]
