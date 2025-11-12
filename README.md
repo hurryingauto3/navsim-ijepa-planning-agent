@@ -59,7 +59,8 @@ navsim-ijepa/
     ├── code/ijepa/                   # Agent implementations
     ├── scripts/                      # HPC training scripts (Slurm)
     ├── reports/                      # Thesis LaTeX
-    └── summaries/                    # Experiment logs
+    ├── summaries/                    # Experiment logs
+    └── web/                          # Web showcase + demo assets
 ```
 
 ---
@@ -143,5 +144,32 @@ python navsim/evaluate/pdm_score.py \
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design (if you want technical details)
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development guide
 - **`reports/final_report/`** - Full thesis LaTeX
+- **`web/`** - Browser-first demo (Next.js + FastAPI)
 
 ---
+
+## Web Showcase (Product Demo)
+
+A polished demo lives in `navsim-ijepa-planning-agent/web/`. It ships a full stack for interviewing and conference demos:
+
+- **Frontend** (`frontend/`): Next.js (App Router) + deck.gl rendering cached or live trajectories. Includes in-browser ONNX runtime (WebGPU/WASM) for lightweight models.
+- **Backend** (`backend/`): FastAPI service providing discovery endpoints and a websocket streaming API. Stubbed live mode can be replaced with real NavSim agents via `navsim_bridge.py`.
+- **Data** (`data/`): Scene manifest and cached run JSON used for instant replays.
+- **Infrastructure** (`infra/`): Docker Compose + Dockerfiles for one-command local runs.
+- **Scripts** (`scripts/`): Utilities to export the IJEPA MLP ONNX model and sync cached runs to Cloudflare R2.
+
+### Quick Start Demo
+
+```bash
+cd navsim-ijepa-planning-agent/web/navsim-showcase
+
+# Backend (localhost:8000)
+uvicorn backend.main:app --reload
+
+# Frontend (localhost:3000, new terminal)
+cd frontend
+pnpm install
+pnpm dev
+```
+
+Open http://localhost:3000, select `IJEPA-MLP` + `scene_001`, click **Run** to watch the replay and inspect metrics. Switch to **Live** mode for the streaming stub, or press **Test ONNX** to validate browser inference. `infra/docker-compose.yml` mirrors the same flow inside containers.
