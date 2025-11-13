@@ -1,13 +1,20 @@
-// @ts-nocheck
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import DeckGL from "@deck.gl/react";
-import { PathLayer, ScatterplotLayer } from "@deck.gl/layers";
-import { COORDINATE_SYSTEM, OrthographicView } from "@deck.gl/core";
+import dynamic from "next/dynamic";
 import { create } from "zustand";
 
 import { stepIJEPA } from "@/lib/onnxRunner";
+
+// Dynamically import DeckGL to prevent SSR issues
+const DeckGL = dynamic(() => import("@deck.gl/react").then((mod) => mod.default), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <p className="text-neutral-400">Loading visualization...</p>
+    </div>
+  ),
+});
 
 type Tick = {
   type: string;
@@ -71,6 +78,8 @@ export default function Page() {
   const [mode, setMode] = useState<"cached" | "live">("cached");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [webglError, setWebglError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [deckModules, setDeckModules] = useState<any>(null);
 
   const reset = useSim((state) => state.reset);
   const pushTick = useSim((state) => state.pushTick);
@@ -79,6 +88,25 @@ export default function Page() {
   const metrics = useSim((state) => state.metrics);
   const latencyMs = useSim((state) => state.latencyMs);
   const wsRef = useRef<WebSocket | null>(null);
+
+  // Load deck.gl modules dynamically after mount
+  useEffect(() => {
+    setMounted(true);
+    Promise.all([
+      import("@deck.gl/layers"),
+      import("@deck.gl/core"),
+    ]).then(([layers, core]) => {
+      setDeckModules({
+        PathLayer: layers.PathLayer,
+        ScatterplotLayer: layers.ScatterplotLayer,
+        COORDINATE_SYSTEM: core.COORDINATE_SYSTEM,
+        OrthographicView: core.OrthographicView,
+      });
+    }).catch((err) => {
+      console.error("Failed to load deck.gl modules:", err);
+      setWebglError("Failed to load visualization modules");
+    });
+  }, []);
 
   // Fetch models and scenes
   useEffect(() => {
@@ -190,12 +218,16 @@ export default function Page() {
     };
   };
 
-  const layers = useMemo(
-    () => [
+  const layers = useMemo(() => {
+    if (!deckModules) return [];
+    
+    const { PathLayer, ScatterplotLayer, COORDINATE_SYSTEM } = deckModules;
+    
+    return [
       new PathLayer({
         id: "ego-path",
         data: [traj],
-        getPath: (d) => d,
+        getPath: (d: any) => d,
         getWidth: 2,
         widthMinPixels: 2,
         getColor: () => [255, 255, 0],
@@ -204,15 +236,14 @@ export default function Page() {
       new ScatterplotLayer({
         id: "agents",
         data: agents,
-        getPosition: (d) => [d.x, d.y, 0],
+        getPosition: (d: any) => [d.x, d.y, 0],
         getRadius: () => 0.5,
         radiusMinPixels: 3,
         getFillColor: () => [80, 200, 255],
         coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
       }),
-    ],
-    [traj, agents],
-  );
+    ];
+  }, [traj, agents, deckModules]);
 
   return (
     <main className="min-h-screen">
@@ -232,7 +263,11 @@ export default function Page() {
         <div className="grid gap-4 grid-cols-1 lg:grid-cols-4">
           <section className="lg:col-span-3 h-[70vh] rounded-xl overflow-hidden">
             <div className="relative h-full w-full bg-neutral-900">
-              {webglError ? (
+              {!mounted || !deckModules ? (
+                <div className="flex items-center justify-center h-full p-8 text-center">
+                  <p className="text-neutral-400">Loading visualization...</p>
+                </div>
+              ) : webglError ? (
                 <div className="flex items-center justify-center h-full p-8 text-center">
                   <div className="space-y-2">
                     <p className="text-red-400 font-semibold">WebGL Error</p>
@@ -256,8 +291,8 @@ export default function Page() {
                   initialViewState={{ target: [0, 0, 0], zoom: 8, rotationX: 0, rotationOrbit: 0 }}
                   controller
                   layers={layers}
-                  views={[new OrthographicView({ id: "ortho" })]}
-                  onError={(error) => {
+                  views={[new deckModules.OrthographicView({ id: "ortho" })]}
+                  onError={(error: any) => {
                     const message = error?.message ?? String(error);
                     if (message.includes("maxTextureDimension2D") || message.includes("canvas-context")) {
                       return;

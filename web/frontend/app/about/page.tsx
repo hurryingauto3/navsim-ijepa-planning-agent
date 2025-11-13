@@ -7,7 +7,7 @@ export default function AboutPage() {
         <div className="space-y-8">
           {/* Header */}
           <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold text-white">Label-Efficient Trajectory Planning</h1>
+            <h1 className="text-4xl font-bold text-white">SSL Autonomous Vehicle Planning with I-JEPA</h1>
             <p className="text-xl text-neutral-400">
               Autonomous Vehicle Planning with Self-Supervised Learning
             </p>

@@ -13,10 +13,20 @@ export default function NavBar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
-            <Link href="/" className="text-xl font-bold text-white hover:text-neutral-300 transition">
-              NavSim Showcase
+            <Link href="/about" className="text-xl font-bold text-white hover:text-neutral-300 transition">
+              SSL Autonomous Vehicle Planning
             </Link>
             <div className="hidden md:flex space-x-6">
+            <Link
+                href="/about"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+                  isActive("/about")
+                    ? "text-white bg-neutral-800"
+                    : "text-neutral-400 hover:text-white hover:bg-neutral-800/50"
+                }`}
+              >
+                About
+              </Link>
               <Link
                 href="/"
                 className={`px-3 py-2 rounded-md text-sm font-medium transition ${
@@ -26,16 +36,6 @@ export default function NavBar() {
                 }`}
               >
                 Demo
-              </Link>
-              <Link
-                href="/about"
-                className={`px-3 py-2 rounded-md text-sm font-medium transition ${
-                  isActive("/about")
-                    ? "text-white bg-neutral-800"
-                    : "text-neutral-400 hover:text-white hover:bg-neutral-800/50"
-                }`}
-              >
-                About
               </Link>
             </div>
           </div>
