@@ -219,6 +219,17 @@ jobs:
             -czf - . \
             | ssh ec2-user@"$PUBLIC_IP" "tar -C ~/navsim-web -xzf -"
 
+      - name: Ensure docker-compose on remote
+        run: |
+          ssh ec2-user@${{ steps.tf.outputs.public_ip }} <<'EOF'
+          set -euxo pipefail
+          if ! command -v docker-compose >/dev/null 2>&1; then
+            sudo curl -SL "https://github.com/docker/compose/releases/download/v2.30.3/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+          fi
+          EOF
+
       - name: Build and restart compose stack
         run: |
           ssh ec2-user@${{ steps.tf.outputs.public_ip }} <<'EOF'
