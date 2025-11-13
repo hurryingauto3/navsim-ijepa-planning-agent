@@ -31,7 +31,7 @@ data "aws_ami" "al2023" {
 }
 
 resource "aws_security_group" "navsim" {
-  name        = "${var.project_name}-sg"
+  name_prefix = "${var.project_name}-sg-"
   description = "Access rules for navsim showcase"
 
   ingress {

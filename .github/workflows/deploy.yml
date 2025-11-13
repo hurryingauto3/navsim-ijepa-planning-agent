@@ -15,6 +15,11 @@ jobs:
       TF_WORKDIR: web/infra/aws
       AWS_REGION: ${{ secrets.AWS_REGION != '' && secrets.AWS_REGION || 'us-east-1' }}
       AWS_INSTANCE_TYPE: ${{ secrets.AWS_INSTANCE_TYPE != '' && secrets.AWS_INSTANCE_TYPE || 't3.micro' }}
+      TF_VAR_ssh_key_name: ${{ secrets.AWS_SSH_KEY_NAME }}
+      TF_VAR_allow_ssh_cidr: ${{ secrets.AWS_SSH_ALLOWED_CIDR != '' && secrets.AWS_SSH_ALLOWED_CIDR || '0.0.0.0/0' }}
+      TF_VAR_route53_zone_id: ${{ secrets.ROUTE53_ZONE_ID != '' && secrets.ROUTE53_ZONE_ID || '' }}
+      TF_VAR_subdomain: ${{ secrets.ROUTE53_SUBDOMAIN != '' && secrets.ROUTE53_SUBDOMAIN || '' }}
+      TF_VAR_project_name: navsim-web
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
