@@ -1,0 +1,82 @@
+name: Deploy Web Showcase
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "web/**"
+      - ".github/workflows/deploy.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TF_WORKDIR: web/infra/aws
+      AWS_REGION: ${{ secrets.AWS_REGION != '' && secrets.AWS_REGION || 'us-east-1' }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: |
+          terraform apply -auto-approve \
+            -var "aws_region=${{ env.AWS_REGION }}" \
+            -var "ssh_key_name=${{ secrets.AWS_SSH_KEY_NAME }}" \
+            -var "allow_ssh_cidr=${{ secrets.AWS_SSH_ALLOWED_CIDR || '0.0.0.0/0' }}" \
+            -var "route53_zone_id=${{ secrets.ROUTE53_ZONE_ID || '' }}" \
+            -var "subdomain=${{ secrets.ROUTE53_SUBDOMAIN || '' }}"
+
+      - name: Capture Terraform Outputs
+        id: tf
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: |
+          echo "public_ip=$(terraform output -raw public_ip)" >> "$GITHUB_OUTPUT"
+          echo "instance_id=$(terraform output -raw instance_id)" >> "$GITHUB_OUTPUT"
+
+      - name: Start SSH Agent
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.AWS_SSH_KEY }}
+
+      - name: Trust EC2 Host
+        run: |
+          ssh-keyscan -H ${{ steps.tf.outputs.public_ip }} >> ~/.ssh/known_hosts
+
+      - name: Sync web directory
+        run: |
+          rsync -az --delete \
+            --exclude 'frontend/node_modules' \
+            --exclude 'frontend/.next' \
+            --exclude '.git' \
+            --exclude '.terraform' \
+            web/ ec2-user@${{ steps.tf.outputs.public_ip }}:/home/ec2-user/navsim-web
+
+      - name: Build and restart compose stack
+        run: |
+          ssh ec2-user@${{ steps.tf.outputs.public_ip }} <<'EOF'
+          set -euxo pipefail
+          cd /home/ec2-user/navsim-web/infra/aws
+          sudo docker compose -f docker-compose.aws.yml build --pull
+          sudo docker compose -f docker-compose.aws.yml up -d --remove-orphans
+          EOF
+
