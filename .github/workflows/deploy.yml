@@ -16,6 +16,7 @@ jobs:
     env:
       TF_WORKDIR: web/infra/aws
       AWS_REGION: ${{ secrets.AWS_REGION != '' && secrets.AWS_REGION || 'us-east-1' }}
+      AWS_INSTANCE_TYPE: ${{ secrets.AWS_INSTANCE_TYPE != '' && secrets.AWS_INSTANCE_TYPE || 't3.micro' }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -41,6 +42,7 @@ jobs:
         run: |
           terraform apply -auto-approve \
             -var "aws_region=${{ env.AWS_REGION }}" \
+            -var "instance_type=${{ env.AWS_INSTANCE_TYPE }}" \
             -var "ssh_key_name=${{ secrets.AWS_SSH_KEY_NAME }}" \
             -var "allow_ssh_cidr=${{ secrets.AWS_SSH_ALLOWED_CIDR || '0.0.0.0/0' }}" \
             -var "route53_zone_id=${{ secrets.ROUTE53_ZONE_ID || '' }}" \
