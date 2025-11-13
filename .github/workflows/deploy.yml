@@ -35,15 +35,43 @@ jobs:
         run: |
           echo "Cleaning up any orphaned resources from previous failed runs..."
           
-          # Clean up security group (idempotent - won't fail if doesn't exist)
+          # Clean up security group - try multiple methods to find and delete it
+          echo "Checking for existing security groups named 'navsim-web-sg'..."
+          
+          # Method 1: Query by name
           SG_ID=$(aws ec2 describe-security-groups \
             --filters "Name=group-name,Values=navsim-web-sg" \
-            --query 'SecurityGroups[0].GroupId' \
-            --output text 2>/dev/null || echo "")
+            --query 'SecurityGroups[*].GroupId' \
+            --output text 2>/dev/null | head -n1 | xargs || echo "")
           
-          if [ "$SG_ID" != "None" ] && [ -n "$SG_ID" ]; then
-            echo "Deleting security group: $SG_ID"
-            aws ec2 delete-security-group --group-id "$SG_ID" 2>&1 || echo "Security group deletion failed or already deleted"
+          # Method 2: If that didn't work, try to find by tag
+          if [ -z "$SG_ID" ] || [ "$SG_ID" = "None" ]; then
+            SG_ID=$(aws ec2 describe-security-groups \
+              --filters "Name=tag:Name,Values=navsim-web-sg" \
+              --query 'SecurityGroups[*].GroupId' \
+              --output text 2>/dev/null | head -n1 | xargs || echo "")
+          fi
+          
+          if [ -n "$SG_ID" ] && [ "$SG_ID" != "None" ] && [[ "$SG_ID" == sg-* ]]; then
+            echo "Found security group: $SG_ID"
+            
+            # Check if it's attached to any instances
+            ATTACHED=$(aws ec2 describe-instances \
+              --filters "Name=instance.group-id,Values=$SG_ID" "Name=instance-state-name,Values=running,pending,stopping,stopped" \
+              --query 'Reservations[*].Instances[*].InstanceId' \
+              --output text 2>/dev/null | xargs || echo "")
+            
+            if [ -n "$ATTACHED" ]; then
+              echo "⚠ Security group is attached to instances: $ATTACHED"
+              echo "Skipping deletion (instances will be cleaned up separately)"
+            else
+              echo "Deleting security group: $SG_ID"
+              if aws ec2 delete-security-group --group-id "$SG_ID" 2>&1; then
+                echo "✓ Security group deleted successfully"
+              else
+                echo "⚠ Security group deletion failed (may have dependencies)"
+              fi
+            fi
           else
             echo "No security group found to delete"
           fi
@@ -91,6 +119,37 @@ jobs:
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKDIR }}
         run: terraform init
+
+      - name: Terraform Destroy orphaned resources (if any)
+        working-directory: ${{ env.TF_WORKDIR }}
+        continue-on-error: true
+        run: |
+          # Try to import existing resources into state, then destroy them
+          # This handles the case where resources exist but aren't in Terraform state
+          
+          # Check if security group exists and try to import it
+          SG_ID=$(aws ec2 describe-security-groups \
+            --filters "Name=group-name,Values=navsim-web-sg" \
+            --query 'SecurityGroups[*].GroupId' \
+            --output text 2>/dev/null | head -n1 | xargs || echo "")
+          
+          if [ -n "$SG_ID" ] && [[ "$SG_ID" == sg-* ]]; then
+            echo "Attempting to import existing security group: $SG_ID"
+            terraform import aws_security_group.navsim "$SG_ID" 2>&1 || echo "Import failed (may not be in state)"
+            terraform destroy -target=aws_security_group.navsim -auto-approve 2>&1 || echo "Destroy failed (may not be in state)"
+          fi
+          
+          # Check if IAM role exists and try to import it
+          ROLE_EXISTS=$(aws iam get-role \
+            --role-name navsim-web-ec2-role \
+            --query 'Role.RoleName' \
+            --output text 2>/dev/null || echo "")
+          
+          if [ -n "$ROLE_EXISTS" ] && [ "$ROLE_EXISTS" != "None" ]; then
+            echo "Attempting to import existing IAM role: navsim-web-ec2-role"
+            terraform import aws_iam_role.navsim navsim-web-ec2-role 2>&1 || echo "Import failed (may not be in state)"
+            terraform destroy -target=aws_iam_role.navsim -auto-approve 2>&1 || echo "Destroy failed (may not be in state)"
+          fi
 
       - name: Terraform Apply
         working-directory: ${{ env.TF_WORKDIR }}
