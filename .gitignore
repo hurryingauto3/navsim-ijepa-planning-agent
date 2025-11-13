@@ -33,3 +33,35 @@ __pycache__/
 *.zip
 .DS_Store
 *.pdf
+
+# Next js gitignore
+.next/
+web/frontend/.pnpm-store/
+web/frontend/node_modules/
+web/frontend/pnpm-lock.yaml
+web/frontend/package-lock.json
+web/frontend/yarn.lock
+web/frontend/bun.lockb
+web/frontend/pnpm-workspace.yaml
+web/frontend/pnpm-workspace.yaml.lock
+node_modules/
+pnpm-store/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+bun.lockb
+pnpm-workspace.yaml
+
+
+
+#fast api gitignore
+.venv/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.development
+.env.test
+.env.production
+.env

@@ -2,15 +2,27 @@ from typing import Any, Dict, List
 
 import asyncio
 import json
+import os
 import pathlib
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent
-DATA = ROOT / "data"
-CACHED = DATA / "cached_runs"
+HERE = pathlib.Path(__file__).resolve().parent
+DATA_ROOT = pathlib.Path(
+    os.getenv("DATA_ROOT", HERE.parent / "data")
+).resolve()
+DATA = DATA_ROOT
+CACHED = DATA_ROOT / "cached_runs"
+
+# Verify data directory exists at startup
+if not DATA_ROOT.exists():
+    import warnings
+    warnings.warn(f"DATA_ROOT does not exist: {DATA_ROOT} (resolved from {os.getenv('DATA_ROOT', 'default')})")
+if not (DATA_ROOT / "scenes.manifest.json").exists():
+    import warnings
+    warnings.warn(f"Scene manifest not found at startup: {DATA_ROOT / 'scenes.manifest.json'}")
 
 app = FastAPI()
 app.add_middleware(
@@ -39,8 +51,15 @@ class SceneInfo(BaseModel):
 
 
 @app.get("/health")
-def health() -> Dict[str, bool]:
-    return {"ok": True}
+def health() -> Dict[str, Any]:
+    manifest_exists = (DATA / "scenes.manifest.json").exists()
+    return {
+        "ok": True,
+        "data_root": str(DATA_ROOT),
+        "data_root_exists": DATA_ROOT.exists(),
+        "manifest_exists": manifest_exists,
+        "cached_runs_dir_exists": CACHED.exists(),
+    }
 
 
 @app.get("/models", response_model=List[ModelInfo])
@@ -72,7 +91,15 @@ def models() -> List[ModelInfo]:
 
 @app.get("/scenes", response_model=List[SceneInfo])
 def scenes() -> List[SceneInfo]:
-    manifest = json.loads((DATA / "scenes.manifest.json").read_text())
+    manifest_path = DATA / "scenes.manifest.json"
+    if not manifest_path.exists():
+        import logging
+        logging.error(f"Scene manifest not found at {manifest_path} (DATA_ROOT={DATA_ROOT}, resolved={manifest_path.resolve()})")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Scene manifest not found at {manifest_path}. DATA_ROOT={DATA_ROOT}"
+        )
+    manifest = json.loads(manifest_path.read_text())
     return manifest
 
 
@@ -80,7 +107,7 @@ def scenes() -> List[SceneInfo]:
 def eval_cached(model: str, scene_token: str) -> Dict[str, Any]:
     path = CACHED / f"{scene_token}_{model}.json"
     if not path.exists():
-        return {"error": "no_cache"}
+        raise HTTPException(status_code=404, detail="Cached run not found")
     run = json.loads(path.read_text())
     return {"aggregate": run["aggregate"]}
 

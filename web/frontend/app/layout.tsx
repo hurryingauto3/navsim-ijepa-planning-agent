@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import NavBar from "./components/NavBar";
 
 export const metadata: Metadata = {
   title: "NavSim Showcase",
@@ -14,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-neutral-950 text-neutral-100">
+        <NavBar />
         {children}
       </body>
     </html>
