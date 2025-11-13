@@ -31,6 +31,63 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Cleanup orphaned resources
+        run: |
+          echo "Cleaning up any orphaned resources from previous failed runs..."
+          
+          # Clean up security group (idempotent - won't fail if doesn't exist)
+          SG_ID=$(aws ec2 describe-security-groups \
+            --filters "Name=group-name,Values=navsim-web-sg" \
+            --query 'SecurityGroups[0].GroupId' \
+            --output text 2>/dev/null || echo "")
+          
+          if [ "$SG_ID" != "None" ] && [ -n "$SG_ID" ]; then
+            echo "Deleting security group: $SG_ID"
+            aws ec2 delete-security-group --group-id "$SG_ID" 2>&1 || echo "Security group deletion failed or already deleted"
+          else
+            echo "No security group found to delete"
+          fi
+          
+          # Clean up IAM instance profile (must be done before role)
+          INSTANCE_PROFILE=$(aws iam get-instance-profile \
+            --instance-profile-name navsim-web-instance-profile \
+            --query 'InstanceProfile.InstanceProfileName' \
+            --output text 2>/dev/null || echo "")
+          
+          if [ "$INSTANCE_PROFILE" != "None" ] && [ -n "$INSTANCE_PROFILE" ]; then
+            echo "Removing role from instance profile: $INSTANCE_PROFILE"
+            aws iam remove-role-from-instance-profile \
+              --instance-profile-name "$INSTANCE_PROFILE" \
+              --role-name navsim-web-ec2-role 2>&1 || echo "Role removal failed or already removed"
+            
+            echo "Deleting instance profile: $INSTANCE_PROFILE"
+            aws iam delete-instance-profile \
+              --instance-profile-name "$INSTANCE_PROFILE" 2>&1 || echo "Instance profile deletion failed or already deleted"
+          else
+            echo "No instance profile found to delete"
+          fi
+          
+          # Clean up IAM role (detach policies first)
+          ROLE_EXISTS=$(aws iam get-role \
+            --role-name navsim-web-ec2-role \
+            --query 'Role.RoleName' \
+            --output text 2>/dev/null || echo "")
+          
+          if [ "$ROLE_EXISTS" != "None" ] && [ -n "$ROLE_EXISTS" ]; then
+            echo "Detaching policies from role: navsim-web-ec2-role"
+            aws iam detach-role-policy \
+              --role-name navsim-web-ec2-role \
+              --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore 2>&1 || echo "Policy already detached or doesn't exist"
+            
+            echo "Deleting IAM role: navsim-web-ec2-role"
+            aws iam delete-role \
+              --role-name navsim-web-ec2-role 2>&1 || echo "Role deletion failed or already deleted"
+          else
+            echo "No IAM role found to delete"
+          fi
+          
+          echo "✓ Cleanup complete"
+
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKDIR }}
         run: terraform init
@@ -94,4 +151,57 @@ jobs:
           sudo docker compose -f docker-compose.aws.yml build --pull
           sudo docker compose -f docker-compose.aws.yml up -d --remove-orphans
           EOF
+
+      - name: Cleanup on failure
+        if: failure()
+        run: |
+          echo "Workflow failed - cleaning up any resources that were created..."
+          
+          # Try to get instance ID from Terraform state if it exists
+          if [ -f "${{ env.TF_WORKDIR }}/terraform.tfstate" ]; then
+            INSTANCE_ID=$(cd ${{ env.TF_WORKDIR }} && terraform output -raw instance_id 2>/dev/null || echo "")
+            if [ -n "$INSTANCE_ID" ] && [ "$INSTANCE_ID" != "" ]; then
+              echo "Terminating EC2 instance: $INSTANCE_ID"
+              aws ec2 terminate-instances --instance-ids "$INSTANCE_ID" 2>&1 || echo "Instance termination failed or already terminated"
+            fi
+          fi
+          
+          # Run the same cleanup as pre-deploy
+          echo "Cleaning up security group, IAM role, and instance profile..."
+          SG_ID=$(aws ec2 describe-security-groups \
+            --filters "Name=group-name,Values=navsim-web-sg" \
+            --query 'SecurityGroups[0].GroupId' \
+            --output text 2>/dev/null || echo "")
+          
+          if [ "$SG_ID" != "None" ] && [ -n "$SG_ID" ]; then
+            aws ec2 delete-security-group --group-id "$SG_ID" 2>&1 || true
+          fi
+          
+          INSTANCE_PROFILE=$(aws iam get-instance-profile \
+            --instance-profile-name navsim-web-instance-profile \
+            --query 'InstanceProfile.InstanceProfileName' \
+            --output text 2>/dev/null || echo "")
+          
+          if [ "$INSTANCE_PROFILE" != "None" ] && [ -n "$INSTANCE_PROFILE" ]; then
+            aws iam remove-role-from-instance-profile \
+              --instance-profile-name "$INSTANCE_PROFILE" \
+              --role-name navsim-web-ec2-role 2>&1 || true
+            aws iam delete-instance-profile \
+              --instance-profile-name "$INSTANCE_PROFILE" 2>&1 || true
+          fi
+          
+          ROLE_EXISTS=$(aws iam get-role \
+            --role-name navsim-web-ec2-role \
+            --query 'Role.RoleName' \
+            --output text 2>/dev/null || echo "")
+          
+          if [ "$ROLE_EXISTS" != "None" ] && [ -n "$ROLE_EXISTS" ]; then
+            aws iam detach-role-policy \
+              --role-name navsim-web-ec2-role \
+              --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore 2>&1 || true
+            aws iam delete-role \
+              --role-name navsim-web-ec2-role 2>&1 || true
+          fi
+          
+          echo "✓ Cleanup on failure complete"
 
