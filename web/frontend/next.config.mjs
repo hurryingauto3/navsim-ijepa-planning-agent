@@ -7,6 +7,8 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Disable SWC minification to use Terser which we can configure
+  swcMinify: false,
   // Exclude onnxruntime-web from optimization to avoid minification issues
   experimental: {
     outputFileTracingExcludes: {
@@ -128,20 +130,36 @@ const nextConfig = {
         terserPlugin.options = terserPlugin.options || {};
         
         // Configure Terser to handle ES modules and exclude onnxruntime-web
-        terserPlugin.options.exclude = (file) => {
+        // Be very aggressive - exclude any file that might contain onnxruntime-web code
+        terserPlugin.options.exclude = (file, chunk) => {
           // Exclude onnxruntime-web files from minification
-          if (file.includes('onnxruntime-web') || 
-              file.includes('ort.bundle') || 
-              file.includes('ort.node') ||
-              file.includes('.mjs')) {
+          // Check both file path and chunk name
+          const fileStr = String(file || '');
+          const chunkName = chunk?.name || '';
+          const chunkFiles = chunk?.files || [];
+          
+          // Check if any file in the chunk is from onnxruntime-web
+          const hasOnnxFile = chunkFiles.some(f => 
+            f.includes('onnxruntime-web') || 
+            f.includes('ort.bundle') || 
+            f.includes('ort.node') ||
+            f.endsWith('.mjs')
+          );
+          
+          if (fileStr.includes('onnxruntime-web') || 
+              fileStr.includes('ort.bundle') || 
+              fileStr.includes('ort.node') ||
+              fileStr.includes('.mjs') ||
+              chunkName.includes('onnxruntime') ||
+              hasOnnxFile) {
             return true;
           }
           // Apply original exclude if it exists
           if (typeof originalExclude === 'function') {
-            return originalExclude(file);
+            return originalExclude(file, chunk);
           }
           if (originalExclude instanceof RegExp) {
-            return originalExclude.test(file);
+            return originalExclude.test(fileStr);
           }
           return false;
         };
@@ -163,6 +181,10 @@ const nextConfig = {
             ecma: 2020,
           },
         };
+      } else {
+        // If no Terser plugin found, we need to add one or disable minification for onnxruntime
+        // For now, let's try to find SWC minifier and configure it, or disable minification
+        console.warn('Terser plugin not found - minification may still fail for onnxruntime-web');
       }
       
       // Configure webpack to skip minification for onnxruntime-web chunks
