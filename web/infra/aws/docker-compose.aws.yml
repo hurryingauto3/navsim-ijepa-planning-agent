@@ -2,9 +2,7 @@ version: "3.9"
 
 services:
   backend:
-    build:
-      context: ../../backend
-    image: navsim-backend:latest
+    image: ${BACKEND_IMAGE:-ghcr.io/${GITHUB_REPOSITORY_OWNER:-hurryingauto3}/navsim-backend:${IMAGE_TAG:-latest}}
     command: uvicorn main:app --host 0.0.0.0 --port 8000
     environment:
       DATA_ROOT: /app/data
@@ -15,10 +13,9 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ../../frontend
-    image: navsim-frontend:latest
-    command: sh -c "corepack enable && pnpm install --frozen-lockfile || pnpm install && pnpm build && pnpm start -p 3000"
+    image: ${FRONTEND_IMAGE:-ghcr.io/${GITHUB_REPOSITORY_OWNER:-hurryingauto3}/navsim-frontend:${IMAGE_TAG:-latest}}
+    # Dependencies and build are done during Docker build, just start the server
+    command: pnpm start -p 3000
     environment:
       NEXT_PUBLIC_API_BASE: http://localhost:8000
       NEXT_PUBLIC_WS_SCHEME: ws

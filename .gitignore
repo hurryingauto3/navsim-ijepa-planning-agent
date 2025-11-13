@@ -38,18 +38,8 @@ __pycache__/
 .next/
 web/frontend/.pnpm-store/
 web/frontend/node_modules/
-web/frontend/pnpm-lock.yaml
-web/frontend/package-lock.json
-web/frontend/yarn.lock
-web/frontend/bun.lockb
-web/frontend/pnpm-workspace.yaml
-web/frontend/pnpm-workspace.yaml.lock
 node_modules/
 pnpm-store/
-bun.lockb
-pnpm-workspace.yaml
-
-
 
 #fast api gitignore
 .venv/
