@@ -24,11 +24,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install rsync
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y rsync
-
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -211,14 +206,18 @@ jobs:
           echo "❌ SSH connection failed after 5 minutes"
           exit 1
 
-      - name: Sync web directory
+      - name: Upload web bundle
         run: |
-          rsync -az --delete \
+          PUBLIC_IP="${{ steps.tf.outputs.public_ip }}"
+          echo "Packaging web workspace and streaming to EC2..."
+          ssh ec2-user@"$PUBLIC_IP" "rm -rf ~/navsim-web && mkdir -p ~/navsim-web"
+          tar -C web \
             --exclude 'frontend/node_modules' \
             --exclude 'frontend/.next' \
             --exclude '.git' \
             --exclude '.terraform' \
-            web/ ec2-user@${{ steps.tf.outputs.public_ip }}:/home/ec2-user/navsim-web
+            -czf - . \
+            | ssh ec2-user@"$PUBLIC_IP" "tar -C ~/navsim-web -xzf -"
 
       - name: Build and restart compose stack
         run: |
