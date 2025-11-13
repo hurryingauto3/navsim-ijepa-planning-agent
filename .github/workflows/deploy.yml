@@ -35,7 +35,27 @@ jobs:
         run: |
           echo "Cleaning up any orphaned resources from previous failed runs..."
           
-          # Clean up security group - try multiple methods to find and delete it
+          # Step 1: Terminate any existing EC2 instances with navsim-web name
+          echo "Checking for existing EC2 instances..."
+          INSTANCE_IDS=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=navsim-web" "Name=instance-state-name,Values=running,pending,stopping,stopped" \
+            --query 'Reservations[*].Instances[*].InstanceId' \
+            --output text 2>/dev/null | xargs || echo "")
+          
+          if [ -n "$INSTANCE_IDS" ]; then
+            echo "Found existing EC2 instances: $INSTANCE_IDS"
+            echo "Terminating instances..."
+            for INSTANCE_ID in $INSTANCE_IDS; do
+              aws ec2 terminate-instances --instance-ids "$INSTANCE_ID" 2>&1 || true
+              echo "Terminated instance: $INSTANCE_ID"
+            done
+            echo "Waiting 30 seconds for instances to terminate..."
+            sleep 30
+          else
+            echo "No existing EC2 instances found"
+          fi
+          
+          # Step 2: Clean up security group - try multiple methods to find and delete it
           echo "Checking for existing security groups named 'navsim-web-sg'..."
           
           # Method 1: Query by name
@@ -54,23 +74,11 @@ jobs:
           
           if [ -n "$SG_ID" ] && [ "$SG_ID" != "None" ] && [[ "$SG_ID" == sg-* ]]; then
             echo "Found security group: $SG_ID"
-            
-            # Check if it's attached to any instances
-            ATTACHED=$(aws ec2 describe-instances \
-              --filters "Name=instance.group-id,Values=$SG_ID" "Name=instance-state-name,Values=running,pending,stopping,stopped" \
-              --query 'Reservations[*].Instances[*].InstanceId' \
-              --output text 2>/dev/null | xargs || echo "")
-            
-            if [ -n "$ATTACHED" ]; then
-              echo "⚠ Security group is attached to instances: $ATTACHED"
-              echo "Skipping deletion (instances will be cleaned up separately)"
+            echo "Deleting security group: $SG_ID"
+            if aws ec2 delete-security-group --group-id "$SG_ID" 2>&1; then
+              echo "✓ Security group deleted successfully"
             else
-              echo "Deleting security group: $SG_ID"
-              if aws ec2 delete-security-group --group-id "$SG_ID" 2>&1; then
-                echo "✓ Security group deleted successfully"
-              else
-                echo "⚠ Security group deletion failed (may have dependencies)"
-              fi
+              echo "⚠ Security group deletion failed (will try Terraform import/destroy)"
             fi
           else
             echo "No security group found to delete"
