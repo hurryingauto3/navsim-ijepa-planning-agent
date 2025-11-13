@@ -58,9 +58,24 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.AWS_SSH_KEY }}
 
-      - name: Trust EC2 Host
+      - name: Wait for EC2 SSH to be ready
         run: |
-          ssh-keyscan -H ${{ steps.tf.outputs.public_ip }} >> ~/.ssh/known_hosts
+          echo "Waiting for EC2 instance SSH to be ready..."
+          PUBLIC_IP="${{ steps.tf.outputs.public_ip }}"
+          
+          # Wait up to 5 minutes for SSH to be available
+          for i in {1..30}; do
+            if ssh-keyscan -H "$PUBLIC_IP" >> ~/.ssh/known_hosts 2>&1 && \
+               ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no -o BatchMode=yes ec2-user@"$PUBLIC_IP" exit 0 2>&1; then
+              echo "✓ SSH is ready after $((i*10)) seconds"
+              exit 0
+            fi
+            echo "Attempt $i/30: SSH not ready yet, waiting 10 seconds..."
+            sleep 10
+          done
+          
+          echo "❌ SSH connection failed after 5 minutes"
+          exit 1
 
       - name: Sync web directory
         run: |
