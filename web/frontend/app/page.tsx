@@ -279,7 +279,7 @@ export default function Page() {
                 </div>
               ) : (
                 <DeckGL
-                  style={{ position: "absolute", inset: 0 }}
+                  style={{ position: "absolute", inset: "0" }}
                   glOptions={{
                     preserveDrawingBuffer: true,
                     powerPreference: "high-performance",
