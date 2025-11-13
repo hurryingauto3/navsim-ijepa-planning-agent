@@ -210,6 +210,8 @@ jobs:
         run: |
           PUBLIC_IP="${{ steps.tf.outputs.public_ip }}"
           echo "Packaging web workspace and streaming to EC2..."
+          echo "Verifying pnpm-lock.yaml exists..."
+          ls -la web/frontend/pnpm-lock.yaml || echo "⚠ pnpm-lock.yaml not found!"
           ssh ec2-user@"$PUBLIC_IP" "rm -rf ~/navsim-web && mkdir -p ~/navsim-web"
           tar -C web \
             --exclude 'frontend/node_modules' \
@@ -218,6 +220,8 @@ jobs:
             --exclude '.terraform' \
             -czf - . \
             | ssh ec2-user@"$PUBLIC_IP" "tar -C ~/navsim-web -xzf -"
+          echo "Verifying files on remote..."
+          ssh ec2-user@"$PUBLIC_IP" "ls -la ~/navsim-web/frontend/pnpm-lock.yaml || echo '⚠ pnpm-lock.yaml missing on remote!'"
 
       - name: Ensure docker-compose on remote
         run: |

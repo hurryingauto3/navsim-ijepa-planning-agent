@@ -2,9 +2,14 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json ./
+COPY pnpm-lock.yaml* ./
 RUN corepack enable \
-    && pnpm install --frozen-lockfile || pnpm install
+    && if [ -f pnpm-lock.yaml ]; then \
+         pnpm install --frozen-lockfile; \
+       else \
+         pnpm install; \
+       fi
 
 COPY . .
 
