@@ -2,7 +2,12 @@
 set -euxo pipefail
 
 dnf update -y
-dnf install -y docker docker-compose-plugin git
+dnf install -y docker docker-compose-plugin git curl
+
+# Ensure docker-compose CLI is available (some environments lack the plugin)
+curl -SL "https://github.com/docker/compose/releases/download/v2.30.3/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
 
 systemctl enable docker
 systemctl start docker

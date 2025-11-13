@@ -224,8 +224,8 @@ jobs:
           ssh ec2-user@${{ steps.tf.outputs.public_ip }} <<'EOF'
           set -euxo pipefail
           cd /home/ec2-user/navsim-web/infra/aws
-          sudo docker compose -f docker-compose.aws.yml build --pull
-          sudo docker compose -f docker-compose.aws.yml up -d --remove-orphans
+          sudo docker-compose -f docker-compose.aws.yml build --pull
+          sudo docker-compose -f docker-compose.aws.yml up -d --remove-orphans
           EOF
 
       - name: Cleanup on failure
