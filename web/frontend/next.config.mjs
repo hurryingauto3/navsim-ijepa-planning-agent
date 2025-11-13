@@ -1,3 +1,9 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -24,7 +30,7 @@ const nextConfig = {
     '@loaders.gl/tiles',
     '@loaders.gl/worker-utils',
   ],
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -35,15 +41,51 @@ const nextConfig = {
     }
     config.module = config.module || {};
     config.module.rules = config.module.rules || [];
-    config.resolve.extensionAlias = {
-      '.js': ['.js', '.ts', '.tsx'],
-      '.jsx': ['.jsx', '.tsx'],
-    };
+    
+    // Replace Node.js-specific files from onnxruntime-web with empty module
+    // These files contain Node.js-specific code that shouldn't be bundled for browser
+    config.plugins = config.plugins || [];
+    config.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(
+        /\.node\.mjs$/,
+        path.resolve(__dirname, 'webpack-empty-module.js')
+      )
+    );
+    
+    // Also ignore via IgnorePlugin as a fallback
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        checkResource(resource) {
+          // Ignore Node.js-specific files from onnxruntime-web
+          if (resource.includes('ort.node') || resource.includes('.node.mjs')) {
+            return true;
+          }
+          return false;
+        },
+      })
+    );
+    
+    // Configure externals for server-side builds to exclude Node.js files
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        'onnxruntime-node': 'commonjs onnxruntime-node',
+      });
+    }
+    
+    // Ignore onnxruntime-web's Node.js-specific imports during build
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
       '@deck.gl/widgets': false,
       '@deck.gl/mapbox': false,
+      'onnxruntime-node': false,
     };
+    
+    config.resolve.extensionAlias = {
+      '.js': ['.js', '.ts', '.tsx'],
+      '.jsx': ['.jsx', '.tsx'],
+    };
+    
     return config;
   },
 };
