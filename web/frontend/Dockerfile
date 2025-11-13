@@ -13,6 +13,9 @@ RUN corepack enable \
 
 COPY . .
 
+# Build Next.js app during Docker build (faster than runtime)
+RUN pnpm build
+
 EXPOSE 3000
 
-CMD ["pnpm", "dev", "-p", "3000"]
+CMD ["pnpm", "start", "-p", "3000"]
